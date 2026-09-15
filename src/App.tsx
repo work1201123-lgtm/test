@@ -120,14 +120,39 @@ function App() {
     }
   }
 
+  const [needsSetup, setNeedsSetup] = useState(false);
+
   useEffect(() => {
-    supabase.from('app_settings').select('*').maybeSingle().then(async ({ data }) => {
+    (async () => {
+      const [{ data }, { data: adminRows }] = await Promise.all([
+        supabase.from('app_settings').select('*').maybeSingle(),
+        supabase.from('app_workers').select('id,pin').eq('role', 'admin').eq('active', true),
+      ]);
+      const admins = ((adminRows as { id: string; pin: string }[] | null) ?? []);
+      const hasPin = admins.some(a => !!a.pin);
       if (data) {
         const incoming = data as Settings;
         const theme = isAppThemeId(incoming.theme) && incoming.theme !== 'midnight' ? incoming.theme : 'abyss';
         const next = incoming.theme === theme ? incoming : { ...incoming, theme };
         setSettings(next);
         applyAppTheme(resolveTheme(next.theme, next.theme_color));
+      }
+      // First run: no admin PIN anywhere -> force one-time setup. Never again.
+      if (!hasPin) {
+        // Create the settings row if the database is brand new/empty.
+        if (!data) {
+          const { data: created } = await supabase.from('app_settings').insert({
+            name: 'Max Gaming', admin_pin: '', worker_pin: '',
+            theme: 'abyss', theme_color: 'emerald', icon: 'gamepad', language: 'en',
+          }).select().maybeSingle();
+          if (created) {
+            setSettings(created as Settings);
+            applyAppTheme(resolveTheme((created as Settings).theme, (created as Settings).theme_color));
+          }
+        }
+        setNeedsSetup(true);
+        setLoading(false);
+        return;
       }
       const stored = sessionStorage.getItem('cafe_auth');
       if (stored) {
@@ -153,7 +178,7 @@ function App() {
         } catch { sessionStorage.removeItem('cafe_auth'); }
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   useEffect(() => {
@@ -382,7 +407,32 @@ function App() {
     return () => window.removeEventListener('click', handler);
   }, [mgmtMenuOpen, settingsMenuOpen]);
 
+  async function completeSetup(adminPin: string, workerPin: string, subPin: string) {
+    const { data: sRow } = await supabase.from('app_settings').select('*').maybeSingle();
+    const sId = (sRow as Settings | null)?.id ?? settings?.id;
+    if (sId) {
+      await supabase.from('app_settings').update({ admin_pin: adminPin, worker_pin: workerPin }).eq('id', sId);
+    }
+    // Deactivate any PIN-less admin placeholders so only the new PIN can log in.
+    await supabase.from('app_workers').update({ active: false }).eq('role', 'admin');
+    const mk = async (name: string, role: Role, pin: string) => {
+      if (!pin) return;
+      const { data: existing } = await supabase.from('app_workers').select('id,pin').eq('role', role).eq('active', true);
+      const row = (((existing as { id: string; pin: string }[] | null) ?? [])[0]);
+      if (row) await supabase.from('app_workers').update({ pin: hashPin(pin), active: true, name }).eq('id', row.id);
+      else await supabase.from('app_workers').insert({ name, role, pin: hashPin(pin), active: true });
+    };
+    await mk('Admin', 'admin', adminPin);
+    await mk('Yacine', 'worker', workerPin);
+    if (subPin) await mk('Karim', 'sub_admin', subPin);
+    const { data: fresh } = await supabase.from('app_settings').select('*').maybeSingle();
+    if (fresh) setSettings(fresh as Settings);
+    setNeedsSetup(false);
+    setLoading(false);
+  }
+
   if (loading) return <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--bg)', color: 'var(--accent)' }}>Loading...</div>;
+  if (needsSetup) return <FirstRunSetup onDone={(a, w, s) => { setLoading(true); completeSetup(a, w, s).catch(() => setLoading(false)); }} t={t} />;
   if (!authed) return <PinAuth settings={settings} onSuccess={(r, wn, wid) => { setAuthed(true); setRole(r); setWorkerName(wn); setWorkerId(wid); }} t={t} />;
 
   const isAdmin = role === 'admin';
@@ -903,6 +953,41 @@ function App() {
     await addLog('Settings changed', 'settings', settings as unknown as Record<string, unknown>, updates as Record<string, unknown>, {});
     await loadData();
   }
+}
+
+// === First-run setup: choose your PINs once. Never asked again. ===
+function FirstRunSetup({ onDone, t }: { onDone: (adminPin: string, workerPin: string, subPin: string) => void; t: TFunc }) {
+  const [adminPin, setAdminPin] = useState('');
+  const [adminPin2, setAdminPin2] = useState('');
+  const [workerPin, setWorkerPin] = useState('');
+  const [subPin, setSubPin] = useState('');
+  const [error, setError] = useState('');
+  const digits = (s: string) => s.replace(/\D/g, '').slice(0, 12);
+
+  function save() {
+    setError('');
+    const a = digits(adminPin), a2 = digits(adminPin2), w = digits(workerPin), s = digits(subPin);
+    if (a.length < 4) { setError(t('pin_too_short')); return; }
+    if (a !== a2) { setError(t('pin_mismatch')); return; }
+    if (w.length < 4) { setError(t('pin_too_short')); return; }
+    if (s && s.length < 4) { setError(t('pin_too_short')); return; }
+    onDone(a, w, s);
+  }
+
+  return <main className="flex min-h-screen items-center justify-center p-4" style={{ background: 'transparent' }}>
+    <div className="panel w-full max-w-md p-8">
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--accent)' }}>{t('setup_title')}</h1>
+        <p className="mt-2 text-sm text-slate-400">{t('setup_desc')}</p>
+      </div>
+      <label className="block text-sm text-slate-300">{t('setup_admin_pin')}<input className="field mt-2 text-center text-2xl tracking-[0.5em]" type="password" inputMode="numeric" maxLength={12} value={adminPin} onChange={e => setAdminPin(digits(e.target.value))} placeholder="----" autoFocus /></label>
+      <label className="mt-3 block text-sm text-slate-300">{t('confirm_new_pin')}<input className="field mt-2 text-center text-2xl tracking-[0.5em]" type="password" inputMode="numeric" maxLength={12} value={adminPin2} onChange={e => setAdminPin2(digits(e.target.value))} placeholder="----" /></label>
+      <label className="mt-3 block text-sm text-slate-300">{t('setup_worker_pin')}<input className="field mt-2 text-center text-2xl tracking-[0.5em]" type="password" inputMode="numeric" maxLength={12} value={workerPin} onChange={e => setWorkerPin(digits(e.target.value))} placeholder="----" /></label>
+      <label className="mt-3 block text-sm text-slate-300">{t('setup_sub_pin')}<input className="field mt-2 text-center text-2xl tracking-[0.5em]" type="password" inputMode="numeric" maxLength={12} value={subPin} onChange={e => setSubPin(digits(e.target.value))} placeholder="----" /></label>
+      {error && <p className="mt-3 rounded-lg border border-red-800 bg-red-950/50 p-3 text-sm text-red-300">{error}</p>}
+      <button className="btn btn-primary mt-6 w-full py-3" onClick={save}>{t('setup_save')}<ArrowRight size={17} /></button>
+    </div>
+  </main>;
 }
 
 // === PIN Auth Screen ===

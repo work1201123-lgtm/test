@@ -542,8 +542,8 @@ function buildSeed(): Record<TableName, Row[]> {
   const settings: Row[] = [
     seedRow({
       name: 'Max Gaming',
-      admin_pin: '1111',
-      worker_pin: '2222',
+      admin_pin: '',
+      worker_pin: '',
       ghost_word_hash: null,
       theme: 'abyss',
       theme_color: 'emerald',
@@ -557,7 +557,7 @@ function buildSeed(): Record<TableName, Row[]> {
     seedRow({
       name: 'Admin',
       role: 'admin',
-      pin: '1111',
+      pin: '',
       active: true,
       last_login_at: null,
       ip_address: null,
@@ -570,7 +570,7 @@ function buildSeed(): Record<TableName, Row[]> {
     seedRow({
       name: 'Yacine',
       role: 'worker',
-      pin: '2222',
+      pin: '',
       active: true,
       last_login_at: null,
       ip_address: null,
@@ -583,7 +583,7 @@ function buildSeed(): Record<TableName, Row[]> {
     seedRow({
       name: 'Karim',
       role: 'sub_admin',
-      pin: '3333',
+      pin: '',
       active: true,
       last_login_at: null,
       ip_address: null,

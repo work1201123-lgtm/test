@@ -1,21 +1,17 @@
--- Seed PIN login for the NEW Supabase project (gmjutbmwoacgrozydwin).
--- Run once in SQL Editor. Plain '1111' matches the local seed;
--- the ghost-reset flow will hash it on first reset.
+-- First-run setup needs EMPTY pins: the app asks the owner to choose PINs
+-- on first open and saves them. Do NOT seed 1111/2222 here.
+-- Run once in SQL Editor on a fresh project (safe to re-run: only
+-- backfills missing columns, never overwrites existing PINs).
 
--- Settings row (plain PINs, like the local seed)
-insert into public.app_settings (name, admin_pin, worker_pin, theme, language)
-select 'Max Gaming', '1111', '2222', 'midnight', 'en'
-where not exists (select 1 from public.app_settings);
+alter table public.app_settings
+  add column if not exists ghost_word_hash text;
 
--- Admin / worker / sub-admin rows (plain PINs, like the local seed)
-insert into public.app_workers (name, role, pin, active)
-select 'Admin', 'admin', '1111', true
-where not exists (select 1 from public.app_workers where role = 'admin');
+alter table public.app_reminders
+  add column if not exists link_kind text,
+  add column if not exists link_id uuid,
+  add column if not exists link_label text;
 
-insert into public.app_workers (name, role, pin, active)
-select 'Yacine', 'worker', '2222', true
-where not exists (select 1 from public.app_workers where role = 'worker');
-
-insert into public.app_workers (name, role, pin, active)
-select 'Karim', 'sub_admin', '3333', true
-where not exists (select 1 from public.app_workers where role = 'sub_admin');
+-- Backfill link columns on old rows (keeps existing reminders working).
+-- If link_kind was created NOT NULL DEFAULT 'none' by an earlier migration,
+-- this update is a harmless no-op.
+update public.app_reminders set link_kind = 'none' where link_kind is null;
