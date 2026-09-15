@@ -1,22 +1,15 @@
-# Cloudflare Pages — static Vite build.
-#
-# Dashboard settings (Pages > your project > Settings > Builds):
-#   Build command:            npm install && npm run build
-#   Build output directory:   dist
-#   Root directory:           (project root)
-#
-# Env vars: set these in the Pages dashboard too (same values as .env):
-#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
-#
-# SPA fallback + security headers come from public/_redirects and
-# public/_headers (Vite copies both into dist on every build).
-# No Workers, no functions, no unsafe-eval — pure static hosting.
+# Cloudflare hosting for this Vite React SPA (no Worker script).
+# GitHub -> Pages: Build command `npm run build`, output directory `dist`.
+# Direct deploy: `npx wrangler deploy` serves ./dist as static assets.
+# SPA fallback (/... -> /index.html) is handled by not_found_handling below
+# plus public/_redirects. App code is untouched.
 
 name = "max-gaming-cafe"
 compatibility_date = "2026-09-01"
 
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+
 [build]
 command = "npm install && npm run build"
-
-[build.upload]
-dir = "dist"
