@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Space Grotesk', sans-serif;
+  color: #f2f7fb;
+  background: #070c16;
+  font-synthesis: none;
+  --accent: #20d26c;
+  --accent-dark: #20c96b;
+  --accent-light: #2ae17b;
+  --accent-bg: #102b21;
+  --accent-bg-dark: #062d22;
+  --accent-ring: #20d26c;
+  /* Full-app theme surfaces (overwritten by applyAppTheme) */
+  --bg: #070c16;
+  --header: #080e19;
+  --panel: #0d1524;
+  --panel-soft: #101b2c;
+  --input: #141f33;
+  --line: #22324d;
+  --line-soft: #1b2a42;
+  --ink: #f2f7fb;
+  --muted: #94a3b8;
+}
+@keyframes mirror-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes logo-shine { 0% { left: -70%; } 55% { left: 130%; } 100% { left: 130%; } }
+@keyframes card-shine { 0% { left: -80%; } 60% { left: 140%; } 100% { left: 140%; } }
+#root { position: relative; z-index: 1; }
+/* Shining logo / selected icon: a light sweep glides across, looping. */
+.logo-shine { position: relative; overflow: hidden; }
+.logo-shine::after { content: ''; position: absolute; top: -60%; bottom: -60%; width: 45%; left: -70%; background: linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent); transform: skewX(-20deg); animation: logo-shine 3.2s ease-in-out infinite; pointer-events: none; }
+/* Theme picker cards: shine sweep on the preview + grow on hover. */
+.theme-card { position: relative; transition: transform 0.16s ease, box-shadow 0.16s ease; }
+.theme-card:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 0 18px var(--accent); z-index: 1; }
+.theme-card .theme-preview { position: relative; overflow: hidden; display: block; }
+.theme-card .theme-preview::after { content: ''; position: absolute; top: -60%; bottom: -60%; width: 40%; left: -80%; background: linear-gradient(105deg, transparent, rgba(255,255,255,0.45), transparent); transform: skewX(-20deg); animation: card-shine 4s ease-in-out infinite; pointer-events: none; }
+/* Buttons: grow a touch + glow on hover (magnetic JS adds proximity glow too). */
+.btn:hover { filter: brightness(1.08); }
+.btn-primary:hover { box-shadow: 0 0 22px var(--accent), 0 12px 28px -12px var(--accent); }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-width: 320px; color: var(--ink);
+  background: var(--bg);
+  background-attachment: fixed;
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a1120; }
+::-webkit-scrollbar-thumb { background: #24354f; border-radius: 20px; }
+@layer components {
+  .panel { @apply rounded-2xl border shadow-[0_18px_50px_-20px_rgba(0,0,0,0.7)]; border-color: var(--line); background: var(--panel); backdrop-filter: blur(6px); }
+  .panel-hover { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_60px_-20px_rgba(0,0,0,0.8)]; }
+  .field { @apply w-full rounded-xl border px-3 py-2.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition focus:border-[var(--accent)]; border-color: var(--line); background: var(--input); color: var(--ink); }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-[0_8px_20px_-12px_rgba(0,0,0,0.8)] transition duration-150 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0; border-color: var(--line); }
+  .btn-primary { border-color: var(--accent); background: linear-gradient(135deg, var(--accent-light), var(--accent-dark)); color: #06100b; box-shadow: 0 12px 28px -12px var(--accent); }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .btn-danger { @apply border-[#ff4b55] bg-gradient-to-br from-[#ff6670] to-[#e5343f] text-white hover:brightness-110; }
+  .btn-ghost { background: var(--panel-soft); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium; border-color: var(--line); background: var(--panel-soft); color: var(--muted); }
+  .table-head { @apply border-b text-left text-[11px] font-bold uppercase tracking-wider; border-color: var(--line); background: var(--panel-soft); color: var(--muted); }
+  .table-row { @apply border-b transition; border-color: var(--line-soft); }
+}
