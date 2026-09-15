@@ -1,1 +1,4 @@
-/*    /index.html   200
+# No redirect rules. SPA fallback is handled by wrangler.toml
+# ([assets] not_found_handling = "single-page-application").
+# A "/* /index.html 200" rule here causes Cloudflare Workers Static Assets
+# to fail with "Infinite loop detected", so it is intentionally absent.

@@ -1,10 +1,12 @@
 # Cloudflare hosting for this Vite React SPA (no Worker script).
-# GitHub -> Pages: Build command `npm run build`, output directory `dist`.
-# Direct deploy: `npx wrangler deploy` serves ./dist as static assets.
-# SPA fallback (/... -> /index.html) is handled by not_found_handling below
-# plus public/_redirects. App code is untouched.
+# GitHub -> Workers Static Assets: Build command `npm run build`, deploy
+# serves ./dist as static files (`npx wrangler deploy`).
+# SPA fallback (/... -> /index.html) is handled by not_found_handling below.
+# No _redirects file: Workers Static Assets rejects the "/* /index.html 200"
+# Pages-style rule as an infinite loop, so it is intentionally absent.
+# App code is untouched.
 
-name = "max-gaming-cafe"
+name = "test"
 compatibility_date = "2026-09-01"
 
 [assets]
