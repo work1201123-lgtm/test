@@ -1,14 +1,12 @@
 # Cloudflare Pages — static Vite build.
 #
 # Dashboard settings (Pages > your project > Settings > Builds):
-#   Build command:            npm run build
+#   Build command:            npm install && npm run build
 #   Build output directory:   dist
 #   Root directory:           (project root)
-#   Environment variables:    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
-#                             (same values as .env.production)
 #
-# Or deploy the built folder directly:
-#   wrangler pages deploy dist --project-name=max-gaming-cafe
+# Env vars: set these in the Pages dashboard too (same values as .env):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 #
 # SPA fallback + security headers come from public/_redirects and
 # public/_headers (Vite copies both into dist on every build).
@@ -16,3 +14,9 @@
 
 name = "max-gaming-cafe"
 compatibility_date = "2026-09-01"
+
+[build]
+command = "npm install && npm run build"
+
+[build.upload]
+dir = "dist"

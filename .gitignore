@@ -20,4 +20,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
+# .env (production Supabase anon key) IS committed on purpose:
+# Cloudflare Pages builds from GitHub and needs it at build time.
+# The anon key is public by design. Never commit service_role keys.
+!.env
+.env.local
